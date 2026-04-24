@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyPlan Hub - Collaborative Study Platform</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body data-page="home">
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">
+          <a href="/">📚 StudyPlan Hub</a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+          <a href="/" class="navbar-item active">Home</a>
+          <a href="./pages/login.html" class="navbar-item">Login</a>
+          <a href="./pages/register.html" class="navbar-item">Register</a>
+        </div>
+        <div class="navbar-actions" id="navActions" style="display: none">
+          <a href="./pages/dashboard.html" class="navbar-item">Dashboard</a>
+          <a href="./pages/create-plan.html" class="navbar-item">Create Plan</a>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <div class="message"></div>
+
+      <section class="hero">
+        <h1>Master Your Studies with Community Plans</h1>
+        <p>Discover structured study plans, follow creators, track progress, and learn together.</p>
+        <a href="./pages/register.html" class="btn btn-primary btn-large">Get Started Free</a>
+      </section>
+
+      <section class="search-section">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search plans by title or category..."
+          />
+          <select id="categoryFilter" class="filter-select">
+            <option value="">All Categories</option>
+            <option value="Mathematics">Mathematics</option>
+            <option value="Science">Science</option>
+            <option value="Languages">Languages</option>
+            <option value="Programming">Programming</option>
+            <option value="History">History</option>
+            <option value="Art">Art</option>
+            <option value="Music">Music</option>
+            <option value="Business">Business</option>
+            <option value="Health">Health</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="sortFilter" class="filter-select">
+            <option value="">Sort by</option>
+            <option value="popular">Most Popular</option>
+            <option value="rating">Highest Rated</option>
+            <option value="newest">Newest</option>
+          </select>
+          <button id="searchBtn" class="btn btn-primary">Search</button>
+        </div>
+      </section>
+
+      <div class="plans-grid" id="plansGrid">
+        <div class="loading">Loading study plans...</div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>&copy; 2026 StudyPlan Hub. Built with ❤️ for learners.</p>
+    </footer>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

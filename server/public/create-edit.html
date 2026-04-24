@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create or Edit Plan - StudyPlan Hub</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">StudyPlan Hub</div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="card form-card">
+        <h1 id="formTitle">Create a Study Plan</h1>
+        <form id="planForm">
+          <label>
+            Title
+            <input type="text" name="title" required />
+          </label>
+          <label>
+            Description
+            <textarea name="description" rows="4" required></textarea>
+          </label>
+          <label>
+            Subject / Exam
+            <input type="text" name="subject" required />
+          </label>
+          <label>
+            Duration (days)
+            <input type="number" name="durationDays" min="1" required />
+          </label>
+
+          <div id="tasksContainer">
+            <h2>Daily Tasks</h2>
+            <div class="task-item">
+              <label>
+                Day
+                <input type="number" name="taskDay" min="1" value="1" required />
+              </label>
+              <label>
+                Title
+                <input type="text" name="taskTitle" required />
+              </label>
+              <label>
+                Description
+                <input type="text" name="taskDescription" required />
+              </label>
+            </div>
+          </div>
+
+          <button id="addTaskButton" type="button" class="button button-secondary">Add task</button>
+          <button type="submit" class="button">Save plan</button>
+        </form>
+        <div id="planFormMessage" class="message"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

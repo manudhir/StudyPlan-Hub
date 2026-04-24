@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Plan - StudyPlan Hub</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body data-page="create-plan">
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">
+          <a href="/">📚 StudyPlan Hub</a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+          <a href="/" class="navbar-item">Home</a>
+          <a href="./login.html" class="navbar-item">Login</a>
+          <a href="./register.html" class="navbar-item">Register</a>
+        </div>
+        <div class="navbar-actions" id="navActions" style="display: none">
+          <a href="./dashboard.html" class="navbar-item">Dashboard</a>
+          <a href="./create-plan.html" class="navbar-item active">Create Plan</a>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <div class="create-plan-page">
+        <div class="create-plan-header">
+          <h1>Create a New Study Plan</h1>
+          <p>Share your knowledge with the community and help others learn</p>
+        </div>
+
+        <div class="message"></div>
+
+        <div class="create-plan-card">
+          <form id="createPlanForm">
+            <div class="form-section">
+              <h2>Plan Information</h2>
+
+              <div class="form-group">
+                <label for="title">Plan Title</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  placeholder="e.g., 30-Day JavaScript Mastery"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea
+                  id="description"
+                  name="description"
+                  placeholder="Describe your study plan and what learners will achieve..."
+                  rows="4"
+                  required
+                ></textarea>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="category">Category</label>
+                  <select id="category" name="category" required>
+                    <option value="">Select a category</option>
+                    <option value="Programming">Programming</option>
+                    <option value="Languages">Languages</option>
+                    <option value="Science">Science</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="History">History</option>
+                    <option value="Art">Art</option>
+                    <option value="Music">Music</option>
+                    <option value="Business">Business</option>
+                    <option value="Health">Health</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="durationDays">Duration (Days)</label>
+                  <input
+                    type="number"
+                    id="durationDays"
+                    name="durationDays"
+                    placeholder="30"
+                    min="1"
+                    max="365"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h2>Daily Tasks</h2>
+              <p class="form-help">Add a task for each day of your study plan</p>
+
+              <div id="tasksContainer">
+                <div class="form-group task-input-group">
+                  <label>Day 1 Task</label>
+                  <input type="text" name="taskTitle" placeholder="Task title" required />
+                  <textarea
+                    name="taskDescription"
+                    placeholder="Task description"
+                    required
+                  ></textarea>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-secondary" id="addTaskBtn">
+                + Add Another Day
+              </button>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Create Plan</button>
+              <a href="./dashboard.html" class="btn btn-secondary">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <style>
+      .create-plan-page {
+        max-width: 800px;
+        margin: 2rem auto;
+      }
+
+      .create-plan-header {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .create-plan-header h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .create-plan-header p {
+        color: #6b7280;
+        font-size: 1.1rem;
+      }
+
+      .create-plan-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2rem;
+      }
+
+      .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      .form-section:last-of-type {
+        border-bottom: none;
+      }
+
+      .form-section h2 {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.3rem;
+        color: #1f2937;
+      }
+
+      .form-help {
+        color: #6b7280;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #1f2937;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color 0.2s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+
+      .task-input-group {
+        background: #f9fafb;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+      }
+
+      .task-input-group label {
+        margin-bottom: 0.5rem;
+      }
+
+      .task-input-group input,
+      .task-input-group textarea {
+        margin-bottom: 0.75rem;
+      }
+
+      .task-input-group button {
+        width: 100%;
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
+      .form-actions .btn {
+        flex: 1;
+      }
+
+      @media (max-width: 768px) {
+        .create-plan-card {
+          padding: 1.5rem;
+        }
+
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+          flex-direction: column;
+        }
+
+        .form-actions .btn {
+          width: 100%;
+        }
+      }
+    </style>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

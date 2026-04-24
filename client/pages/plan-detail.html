@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plan Details - StudyPlan Hub</title>
+    <link rel="stylesheet" href="../css/styles.css" />
+  </head>
+  <body data-page="plan-detail">
+    <nav class="navbar">
+      <div class="container">
+        <div class="navbar-brand">
+          <a href="/">📚 StudyPlan Hub</a>
+        </div>
+        <div class="navbar-menu" id="navMenu">
+          <a href="/" class="navbar-item">Home</a>
+          <a href="./login.html" class="navbar-item">Login</a>
+          <a href="./register.html" class="navbar-item">Register</a>
+        </div>
+        <div class="navbar-actions" id="navActions" style="display: none">
+          <a href="./dashboard.html" class="navbar-item">Dashboard</a>
+          <a href="./create-plan.html" class="navbar-item">Create Plan</a>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+      <div class="message"></div>
+
+      <div id="planDetail" class="plan-detail-container loading">
+        Loading plan details...
+      </div>
+    </main>
+
+    <style>
+      .plan-detail-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+      }
+
+      .plan-detail-header h1 {
+        margin: 0 0 1rem 0;
+        font-size: 2.5rem;
+      }
+
+      .plan-category {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+      }
+
+      .plan-detail-header p {
+        margin: 1rem 0;
+        line-height: 1.6;
+        font-size: 1.1rem;
+      }
+
+      .plan-meta {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .plan-meta span {
+        font-size: 1rem;
+      }
+
+      .plan-section {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .plan-section h2 {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        color: #1f2937;
+      }
+
+      .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .task-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+      }
+
+      .task-item input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        margin-top: 2px;
+        cursor: pointer;
+        accent-color: #667eea;
+      }
+
+      .task-content {
+        flex: 1;
+      }
+
+      .task-content h4 {
+        margin: 0 0 0.5rem 0;
+        color: #1f2937;
+      }
+
+      .task-description {
+        margin: 0;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 1rem;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+      }
+
+      .rating-group {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .star-input {
+        font-size: 2rem;
+        cursor: pointer;
+        color: #d1d5db;
+        transition: color 0.2s;
+      }
+
+      .star-input:hover,
+      .star-input.active {
+        color: #fbbf24;
+      }
+
+      .plan-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .plan-actions .btn {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      @media (max-width: 768px) {
+        .plan-detail-header {
+          padding: 2rem 1.5rem;
+        }
+
+        .plan-detail-header h1 {
+          font-size: 1.8rem;
+        }
+
+        .plan-meta {
+          gap: 1rem;
+        }
+
+        .plan-section {
+          padding: 1.5rem;
+        }
+
+        .plan-actions {
+          flex-direction: column;
+        }
+
+        .plan-actions .btn {
+          width: 100%;
+        }
+      }
+    </style>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

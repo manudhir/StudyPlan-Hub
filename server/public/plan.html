@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study Plan - StudyPlan Hub</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">StudyPlan Hub</div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="create-edit.html">Create Plan</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="card plan-meta">
+        <h1 id="planTitle"></h1>
+        <p id="planDescription"></p>
+        <div class="meta-row">
+          <span id="planSubject"></span>
+          <span id="planDuration"></span>
+          <span id="planRating"></span>
+          <span id="planFollowers"></span>
+        </div>
+        <button id="followButton" class="button">Follow</button>
+      </section>
+
+      <section class="card">
+        <h2>Daily Tasks</h2>
+        <div id="taskList"></div>
+      </section>
+
+      <section class="card">
+        <h2>Progress</h2>
+        <form id="progressForm">
+          <div id="progressTasks"></div>
+          <button type="submit" class="button">Save progress</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Rate this plan</h2>
+        <div class="rating-row">
+          <select id="ratingSelect">
+            <option value="1">1 star</option>
+            <option value="2">2 stars</option>
+            <option value="3" selected>3 stars</option>
+            <option value="4">4 stars</option>
+            <option value="5">5 stars</option>
+          </select>
+          <button id="rateButton" class="button">Submit rating</button>
+        </div>
+      </section>
+
+      <div id="planMessage" class="message"></div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

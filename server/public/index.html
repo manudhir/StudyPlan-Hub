@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyPlan Hub</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">StudyPlan Hub</div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="login.html">Login</a>
+        <a href="register.html">Register</a>
+        <a href="dashboard.html">Dashboard</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      <section class="hero">
+        <h1>Collaborate on polished study plans.</h1>
+        <p>Discover plans, follow creators, track progress, and rate what works.</p>
+      </section>
+
+      <section class="filters">
+        <input id="searchInput" type="search" placeholder="Search by title or subject" />
+        <select id="sortSelect">
+          <option value="">Sort by</option>
+          <option value="popular">Popular</option>
+          <option value="rating">Rating</option>
+          <option value="duration">Duration</option>
+        </select>
+        <button id="searchButton" class="button">Search</button>
+      </section>
+
+      <section>
+        <h2>Study Plans</h2>
+        <div id="planList" class="grid"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

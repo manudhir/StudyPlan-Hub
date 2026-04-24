@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - StudyPlan Hub</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand">StudyPlan Hub</div>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="login.html">Login</a>
+        <a href="register.html">Register</a>
+      </nav>
+    </header>
+
+    <main class="page-shell auth-shell">
+      <h1>Register</h1>
+      <form id="registerForm" class="card">
+        <label>
+          Name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Email
+          <input type="email" name="email" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" minlength="8" required />
+        </label>
+        <button type="submit" class="button">Create account</button>
+        <p class="form-note">Already have an account? <a href="login.html">Login</a></p>
+      </form>
+      <div id="registerMessage" class="message"></div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
