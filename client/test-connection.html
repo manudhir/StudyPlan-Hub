@@ -1,0 +1,74 @@
+<!-- Test Frontend-Backend Connection -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .box { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>StudyPlan Hub - Connection Test</h1>
+    
+    <div class="box info">
+        <h3>Frontend URL:</h3>
+        <p id="frontend"></p>
+    </div>
+    
+    <div class="box info">
+        <h3>Backend API URL:</h3>
+        <p id="backend"></p>
+    </div>
+    
+    <div class="box" id="result">
+        <h3>Testing...</h3>
+        <p>Connecting to backend...</p>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? `${window.location.protocol}//${window.location.hostname}:5174/api`
+          : 'https://studyplan-hub.onrender.com/api';
+
+        document.getElementById('frontend').textContent = window.location.href;
+        document.getElementById('backend').textContent = API_BASE;
+
+        async function testConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name: 'Test', 
+                        email: `test-${Date.now()}@test.com`, 
+                        password: 'Test123!' 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').className = 'box success';
+                    document.getElementById('result').innerHTML = '<h3>✓ Connection Successful!</h3><p>Backend is responding correctly.</p>';
+                } else if (response.status === 409) {
+                    document.getElementById('result').className = 'box success';
+                    document.getElementById('result').innerHTML = '<h3>✓ Connection Successful!</h3><p>Backend is online (email already exists - that is ok for testing).</p>';
+                } else {
+                    document.getElementById('result').className = 'box error';
+                    document.getElementById('result').innerHTML = `<h3>✗ Connection Failed</h3><p>${data.message || response.statusText}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').className = 'box error';
+                document.getElementById('result').innerHTML = `<h3>✗ Connection Error</h3><p>${error.message}</p><p>Make sure backend is running at: ${API_BASE}</p>`;
+            }
+        }
+
+        // Test after 1 second
+        setTimeout(testConnection, 1000);
+    </script>
+</body>
+</html>
