@@ -44,3 +44,9 @@ export const progressSchema = Joi.object({
 export const ratingSchema = Joi.object({
   rating: Joi.number().integer().min(1).max(5).required(),
 });
+
+export const aiSuggestPlanSchema = Joi.object({
+  subject: Joi.string().min(2).max(100).required(),
+  duration: Joi.number().integer().min(1).max(365).required(),
+  level: Joi.string().valid('beginner', 'intermediate', 'advanced').required(),
+});

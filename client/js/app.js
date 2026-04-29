@@ -1,5 +1,9 @@
 // UI Utilities
 function showMessage(message, type = 'info') {
+  if (window.Toast && typeof window.Toast[type] === 'function') {
+    window.Toast[type](message);
+  }
+
   const messageEl = document.querySelector('.message');
   if (!messageEl) return;
 
@@ -10,8 +14,92 @@ function showMessage(message, type = 'info') {
   }, 5000);
 }
 
+function escapeHtml(value) {
+  const div = document.createElement('div');
+  div.textContent = value == null ? '' : String(value);
+  return div.innerHTML;
+}
+
+function safeText(value, fallback = '') {
+  if (value == null) return fallback;
+  const text = String(value).trim();
+  return text || fallback;
+}
+
+function safeNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function safeInteger(value, fallback = 0) {
+  return Math.trunc(safeNumber(value, fallback));
+}
+
+function safeArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function normalizePlan(plan) {
+  const source = plan && typeof plan === 'object' ? plan : {};
+
+  return {
+    id: safeInteger(source.id),
+    title: safeText(source.title, 'Untitled plan'),
+    description: safeText(source.description, 'No description available.'),
+    category: safeText(source.category || source.subject, 'Other'),
+    durationDays: safeInteger(source.durationDays ?? source.duration_days, 0),
+    averageRating: safeNumber(source.averageRating ?? source.average_rating, 0),
+    followerCount: safeInteger(source.followerCount ?? source.follower_count, 0),
+    tasks: safeArray(source.tasks).map(normalizeTask),
+  };
+}
+
+function normalizeTask(task, index = 0) {
+  const source = task && typeof task === 'object' ? task : {};
+
+  return {
+    id: safeInteger(source.id, index + 1),
+    day: safeInteger(source.day ?? source.day_number, index + 1),
+    title: safeText(source.title, `Task ${index + 1}`),
+    description: safeText(source.description, 'Complete the task for this day.'),
+  };
+}
+
+function setContent(container, html) {
+  if (!container) return;
+  container.classList.remove('loading');
+  container.innerHTML = html;
+}
+
+function setLoading(container, message = 'Loading...') {
+  if (!container) return;
+  container.classList.add('loading');
+  container.innerHTML = `<div class="loading">${escapeHtml(message)}</div>`;
+}
+
+function setErrorState(container, title = 'Error loading content', message = 'Please try again later.') {
+  setContent(
+    container,
+    `<div class="empty-state"><h3>${escapeHtml(title)}</h3><p>${escapeHtml(message)}</p></div>`,
+  );
+}
+
+function renderSafely(container, renderer, fallbackTitle = 'Unable to render content') {
+  try {
+    setContent(container, renderer());
+  } catch (error) {
+    console.error(fallbackTitle, error);
+    setErrorState(container, fallbackTitle, 'The data could not be displayed safely.');
+  }
+}
+
 function formatDateTime(dateString) {
-  return new Date(dateString).toLocaleDateString('en-US', {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) {
+    return 'Unknown';
+  }
+
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -19,8 +107,9 @@ function formatDateTime(dateString) {
 }
 
 function renderStars(rating) {
-  const full = Math.floor(rating);
-  const hasHalf = rating % 1 !== 0;
+  const normalizedRating = Math.max(0, Math.min(5, safeNumber(rating, 0)));
+  const full = Math.floor(normalizedRating);
+  const hasHalf = normalizedRating % 1 !== 0;
   let stars = '';
 
   for (let i = 0; i < 5; i++) {
@@ -68,50 +157,59 @@ async function loadHomePlans() {
   if (!plansGrid) return;
 
   try {
-    plansGrid.innerHTML = '<div class="loading">Loading study plans...</div>';
-    const plans = await api.getPlans();
+    setLoading(plansGrid, 'Loading study plans...');
+    const plans = safeArray(await api.getPlans());
 
     if (plans.length === 0) {
-      plansGrid.innerHTML = '<div class="empty-state"><h3>No plans found</h3><p>Be the first to create a study plan!</p></div>';
+      setContent(
+        plansGrid,
+        '<div class="empty-state"><h3>No plans found</h3><p>Be the first to create a study plan!</p></div>',
+      );
       return;
     }
 
-    plansGrid.innerHTML = plans.map(createPlanCard).join('');
+    renderSafely(plansGrid, () => plans.map(createPlanCard).join(''), 'Error rendering plans');
   } catch (error) {
-    plansGrid.innerHTML = '<div class="empty-state"><h3>Error loading plans</h3><p>Please try again later.</p></div>';
+    setErrorState(plansGrid, 'Error loading plans', error.message || 'Please try again later.');
     console.error('Error loading plans:', error);
   }
 }
 
 function createPlanCard(plan) {
+  const safePlan = normalizePlan(plan);
+  const ratingLabel = safePlan.averageRating.toFixed(1);
+  const actionButtons = safePlan.id
+    ? `
+        <button class="btn btn-primary" onclick="viewPlan(${safePlan.id})">View Plan</button>
+        <button class="btn btn-secondary" onclick="favoritePlan(${safePlan.id})">Follow</button>
+      `
+    : '<span class="empty-state">Plan unavailable</span>';
+
   return `
     <div class="plan-card">
       <div class="plan-card-header">
-        <h3>${plan.title}</h3>
-        <span class="plan-card-category">${plan.category}</span>
+        <h3>${escapeHtml(safePlan.title)}</h3>
+        <span class="plan-card-category">${escapeHtml(safePlan.category)}</span>
       </div>
       <div class="plan-card-body">
-        <p class="plan-description">${plan.description}</p>
+        <p class="plan-description">${escapeHtml(safePlan.description)}</p>
         <div class="plan-stats">
           <div class="stat">
-            <div class="stat-value">${plan.durationDays}</div>
+            <div class="stat-value">${safePlan.durationDays}</div>
             <div class="stat-label">Days</div>
           </div>
           <div class="stat">
-            <div class="stat-value">${plan.followerCount || 0}</div>
+            <div class="stat-value">${safePlan.followerCount}</div>
             <div class="stat-label">Followers</div>
           </div>
           <div class="stat">
             <div class="rating-display">
-              <span class="star">${renderStars(plan.averageRating)}</span>
+              <span class="star">${renderStars(safePlan.averageRating)}</span>
             </div>
-            <div class="stat-label">${(plan.averageRating || 0).toFixed(1)}</div>
+            <div class="stat-label">${ratingLabel}</div>
           </div>
         </div>
-        <div class="plan-actions">
-          <button class="btn btn-primary" onclick="viewPlan(${plan.id})">View Plan</button>
-          <button class="btn btn-secondary" onclick="favoritePlan(${plan.id})">Follow</button>
-        </div>
+        <div class="plan-actions">${actionButtons}</div>
       </div>
     </div>
   `;
@@ -154,15 +252,23 @@ function setupHomeSearch() {
 
     try {
       const plansGrid = document.getElementById('plansGrid');
-      plansGrid.innerHTML = '<div class="loading">Searching...</div>';
-      const plans = await api.getPlans(filters);
+      setLoading(plansGrid, 'Searching...');
+      const plans = safeArray(await api.getPlans(filters));
 
       if (plans.length === 0) {
-        plansGrid.innerHTML = '<div class="empty-state"><h3>No plans found</h3><p>Try different search criteria.</p></div>';
+        setContent(
+          plansGrid,
+          '<div class="empty-state"><h3>No plans found</h3><p>Try different search criteria.</p></div>',
+        );
       } else {
-        plansGrid.innerHTML = plans.map(createPlanCard).join('');
+        renderSafely(plansGrid, () => plans.map(createPlanCard).join(''), 'Error rendering search results');
       }
     } catch (error) {
+      setErrorState(
+        document.getElementById('plansGrid'),
+        'Error loading plans',
+        error.message || 'Search failed.',
+      );
       showMessage('Search error: ' + error.message, 'error');
     }
   }
@@ -238,20 +344,29 @@ async function setupDashboard() {
     return;
   }
 
+  const profileContainer = document.getElementById('profileInfo');
+  const createdContainer = document.getElementById('createdPlans');
+  const followedContainer = document.getElementById('followedPlans');
+
+  setLoading(profileContainer, 'Loading profile...');
+  setLoading(createdContainer, 'Loading your plans...');
+  setLoading(followedContainer, 'Loading followed plans...');
+
   try {
-    const profile = await api.getUserProfile();
-    const profileContainer = document.getElementById('profileInfo');
+    const profile = await api.getUserProfile() || {};
+    const createdPlans = safeArray(profile.createdPlans);
+    const followedPlans = safeArray(profile.followedPlans);
 
     if (profileContainer) {
-      profileContainer.innerHTML = `
+      renderSafely(profileContainer, () => `
         <div class="profile-info">
           <div class="profile-row">
             <span class="profile-row-label">Name</span>
-            <span class="profile-row-value">${profile.name}</span>
+            <span class="profile-row-value">${escapeHtml(safeText(profile.name, 'Unknown'))}</span>
           </div>
           <div class="profile-row">
             <span class="profile-row-label">Email</span>
-            <span class="profile-row-value">${profile.email}</span>
+            <span class="profile-row-value">${escapeHtml(safeText(profile.email, 'Unknown'))}</span>
           </div>
           <div class="profile-row">
             <span class="profile-row-label">Member Since</span>
@@ -259,34 +374,49 @@ async function setupDashboard() {
           </div>
           <div class="profile-row">
             <span class="profile-row-label">Created Plans</span>
-            <span class="profile-row-value">${profile.createdPlans?.length || 0}</span>
+            <span class="profile-row-value">${createdPlans.length}</span>
           </div>
           <div class="profile-row">
             <span class="profile-row-label">Following</span>
-            <span class="profile-row-value">${profile.followedPlans?.length || 0}</span>
+            <span class="profile-row-value">${followedPlans.length}</span>
           </div>
         </div>
-      `;
+      `, 'Error rendering profile');
     }
 
-    const createdContainer = document.getElementById('createdPlans');
     if (createdContainer) {
-      if (profile.createdPlans?.length > 0) {
-        createdContainer.innerHTML = profile.createdPlans.map(createPlanCard).join('');
+      if (createdPlans.length > 0) {
+        renderSafely(
+          createdContainer,
+          () => createdPlans.map(createPlanCard).join(''),
+          'Error rendering created plans',
+        );
       } else {
-        createdContainer.innerHTML = '<div class="empty-state"><p>You haven\'t created any plans yet. <a href="/pages/create-plan.html">Create one now!</a></p></div>';
+        setContent(
+          createdContainer,
+          '<div class="empty-state"><p>You haven\'t created any plans yet. <a href="/pages/create-plan.html">Create one now!</a></p></div>',
+        );
       }
     }
 
-    const followedContainer = document.getElementById('followedPlans');
     if (followedContainer) {
-      if (profile.followedPlans?.length > 0) {
-        followedContainer.innerHTML = profile.followedPlans.map(createPlanCard).join('');
+      if (followedPlans.length > 0) {
+        renderSafely(
+          followedContainer,
+          () => followedPlans.map(createPlanCard).join(''),
+          'Error rendering followed plans',
+        );
       } else {
-        followedContainer.innerHTML = '<div class="empty-state"><p>You\'re not following any plans yet.</p></div>';
+        setContent(
+          followedContainer,
+          '<div class="empty-state"><p>You\'re not following any plans yet.</p></div>',
+        );
       }
     }
   } catch (error) {
+    setErrorState(profileContainer, 'Error loading profile', error.message || 'Please try again.');
+    setErrorState(createdContainer, 'Error loading plans', 'Your created plans could not be loaded.');
+    setErrorState(followedContainer, 'Error loading followed plans', 'Followed plans could not be loaded.');
     showMessage('Error loading dashboard: ' + error.message, 'error');
   }
 }
@@ -301,46 +431,86 @@ function setupCreatePlanForm() {
     return;
   }
 
-  let taskCount = 1;
+  let taskCount = 0;
   const addTaskBtn = document.getElementById('addTaskBtn');
   const tasksContainer = document.getElementById('tasksContainer');
 
-  addTaskBtn?.addEventListener('click', () => {
+  const reindexTaskInputs = () => {
+    const groups = tasksContainer?.querySelectorAll('.task-input-group') || [];
+    groups.forEach((group, index) => {
+      const label = group.querySelector('label');
+      if (label) {
+        label.textContent = `Day ${index + 1} Task`;
+      }
+    });
+    taskCount = groups.length;
+  };
+
+  const addTaskInput = (task = {}) => {
     taskCount++;
     const taskDiv = document.createElement('div');
     taskDiv.className = 'form-group task-input-group';
     taskDiv.innerHTML = `
-      <label>Day ${taskCount} Task</label>
-      <input type="text" name="taskTitle" placeholder="Task title" required />
-      <textarea name="taskDescription" placeholder="Task description" required></textarea>
-      <button type="button" class="btn btn-danger btn-small" onclick="this.parentElement.remove()">Remove</button>
+      <label>Day ${safeInteger(task.day, taskCount)} Task</label>
+      <input type="text" name="taskTitle" placeholder="Task title" value="${escapeHtml(task.title || '')}" required />
+      <textarea name="taskDescription" placeholder="Task description" required>${escapeHtml(task.description || '')}</textarea>
+      <button type="button" class="btn btn-danger btn-small remove-task-btn">Remove</button>
     `;
     tasksContainer?.appendChild(taskDiv);
-  });
+
+    taskDiv.querySelector('.remove-task-btn')?.addEventListener('click', () => {
+      if ((tasksContainer?.querySelectorAll('.task-input-group').length || 0) <= 1) {
+        showMessage('A plan needs at least one task.', 'warning');
+        return;
+      }
+
+      taskDiv.remove();
+      reindexTaskInputs();
+    });
+
+    reindexTaskInputs();
+  };
+
+  const setTaskRows = (tasks) => {
+    if (!tasksContainer) return;
+    tasksContainer.innerHTML = '';
+    taskCount = 0;
+    const rows = safeArray(tasks);
+    (rows.length ? rows : [{}]).forEach(addTaskInput);
+  };
+
+  setTaskRows([{}]);
+  addTaskBtn?.addEventListener('click', () => addTaskInput());
+  setupAiPlanGenerator({ form, setTaskRows });
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = new FormData(form);
-    const tasks = [];
-    const titleInputs = form.querySelectorAll('[name="taskTitle"]');
-    const descriptionInputs = form.querySelectorAll('[name="taskDescription"]');
+    const taskGroups = form.querySelectorAll('.task-input-group');
+    const tasks = Array.from(taskGroups).map((group, index) => {
+      const titleInput = group.querySelector('[name="taskTitle"]');
+      const descriptionInput = group.querySelector('[name="taskDescription"]');
 
-    titleInputs.forEach((input, index) => {
-      tasks.push({
+      return {
         day: index + 1,
-        title: input.value,
-        description: descriptionInputs[index].value,
-      });
-    });
+        title: titleInput?.value || '',
+        description: descriptionInput?.value || '',
+      };
+    }).filter((task) => task.title.trim() && task.description.trim());
 
     const planData = {
-      title: formData.get('title'),
-      description: formData.get('description'),
-      category: formData.get('category'),
-      durationDays: parseInt(formData.get('durationDays')),
+      title: safeText(formData.get('title')),
+      description: safeText(formData.get('description')),
+      category: safeText(formData.get('category')),
+      durationDays: safeInteger(formData.get('durationDays'), tasks.length || 1),
       tasks,
     };
+
+    if (!planData.durationDays || tasks.length === 0) {
+      showMessage('Please add a valid duration and at least one task.', 'error');
+      return;
+    }
 
     try {
       const result = await api.createPlan(planData);
@@ -354,46 +524,173 @@ function setupCreatePlanForm() {
   });
 }
 
+function setupAiPlanGenerator({ form, setTaskRows }) {
+  const aiButton = document.getElementById('aiPlanGeneratorBtn');
+  if (!aiButton) return;
+
+  aiButton.addEventListener('click', () => {
+    openAiPlanModal({ form, setTaskRows });
+  });
+}
+
+function openAiPlanModal({ form, setTaskRows }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay ai-plan-overlay show';
+  overlay.innerHTML = `
+    <div class="modal ai-plan-modal" role="dialog" aria-modal="true" aria-labelledby="aiPlanTitle">
+      <div class="modal-header">
+        <h2 id="aiPlanTitle">AI Plan Generator</h2>
+      </div>
+      <form id="aiPlanForm" class="ai-modal-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="aiSubject">Subject</label>
+            <input id="aiSubject" name="subject" type="text" placeholder="JavaScript, Biology, Algebra..." required />
+          </div>
+          <div class="form-group">
+            <label for="aiDuration">Duration</label>
+            <input id="aiDuration" name="duration" type="number" min="1" max="365" value="7" required />
+          </div>
+          <div class="form-group">
+            <label for="aiLevel">Level</label>
+            <select id="aiLevel" name="level" required>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <p class="ai-modal-status" id="aiModalStatus"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="aiCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="aiSubmitBtn">Generate Plan</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const closeModal = () => {
+    overlay.classList.add('closing');
+    setTimeout(() => overlay.remove(), 200);
+  };
+
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) {
+      closeModal();
+    }
+  });
+
+  document.body.appendChild(overlay);
+
+  const aiForm = overlay.querySelector('#aiPlanForm');
+  const cancelBtn = overlay.querySelector('#aiCancelBtn');
+  const submitBtn = overlay.querySelector('#aiSubmitBtn');
+  const status = overlay.querySelector('#aiModalStatus');
+  const subjectInput = overlay.querySelector('#aiSubject');
+
+  const existingTitle = form.querySelector('[name="title"]')?.value;
+  if (existingTitle && subjectInput) {
+    subjectInput.value = existingTitle;
+  }
+
+  cancelBtn?.addEventListener('click', closeModal);
+
+  aiForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const formData = new FormData(aiForm);
+    const payload = {
+      subject: safeText(formData.get('subject')),
+      duration: safeInteger(formData.get('duration'), 7),
+      level: safeText(formData.get('level'), 'beginner'),
+    };
+
+    if (!payload.subject || !payload.duration) {
+      if (status) status.textContent = 'Enter a subject and valid duration.';
+      return;
+    }
+
+    try {
+      if (submitBtn) submitBtn.disabled = true;
+      if (status) status.textContent = 'Generating your plan...';
+      const suggestion = await api.suggestPlan(payload);
+      applySuggestedPlanToForm(form, suggestion, setTaskRows);
+      showMessage('AI plan generated and added to the form.', 'success');
+      closeModal();
+    } catch (error) {
+      if (status) status.textContent = error.message || 'Could not generate a plan.';
+      showMessage('AI plan generation failed: ' + (error.message || 'Please try again.'), 'error');
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+
+  subjectInput?.focus();
+}
+
+function applySuggestedPlanToForm(form, suggestion, setTaskRows) {
+  const plan = suggestion && typeof suggestion === 'object' ? suggestion : {};
+  const titleInput = form.querySelector('[name="title"]');
+  const descriptionInput = form.querySelector('[name="description"]');
+  const categoryInput = form.querySelector('[name="category"]');
+  const durationInput = form.querySelector('[name="durationDays"]');
+
+  if (titleInput) titleInput.value = safeText(plan.title, 'Generated Study Plan');
+  if (descriptionInput) descriptionInput.value = safeText(plan.description, 'Generated daily study plan.');
+  if (durationInput) durationInput.value = safeInteger(plan.durationDays || plan.duration, 1);
+
+  if (categoryInput) {
+    const category = safeText(plan.category, 'Other');
+    const hasCategory = Array.from(categoryInput.options).some((option) => option.value === category);
+    categoryInput.value = hasCategory ? category : 'Other';
+  }
+
+  const tasks = safeArray(plan.tasks).map((task, index) => normalizeTask(task, index));
+  setTaskRows(tasks);
+}
+
 // Plan Detail Page
 async function setupPlanDetail() {
-  if (!document.getElementById('planDetail')) return;
+  const container = document.getElementById('planDetail');
+  if (!container) return;
 
   const params = new URLSearchParams(window.location.search);
   const planId = params.get('id');
 
   if (!planId) {
+    setErrorState(container, 'Plan not found', 'Missing plan ID.');
     showMessage('Plan not found', 'error');
     return;
   }
 
   try {
-    const plan = await api.getPlanById(planId);
-    const container = document.getElementById('planDetail');
+    setLoading(container, 'Loading plan details...');
+    const plan = normalizePlan(await api.getPlanById(planId));
+    const tasks = safeArray(plan.tasks);
 
-    container.innerHTML = `
+    renderSafely(container, () => `
       <div class="plan-detail-header">
-        <h1>${plan.title}</h1>
-        <span class="plan-category">${plan.category}</span>
-        <p>${plan.description}</p>
+        <h1>${escapeHtml(plan.title)}</h1>
+        <span class="plan-category">${escapeHtml(plan.category)}</span>
+        <p>${escapeHtml(plan.description)}</p>
         <div class="plan-meta">
           <span>📅 ${plan.durationDays} days</span>
           <span>👥 ${plan.followerCount} followers</span>
-          <span>⭐ ${renderStars(plan.averageRating)} (${(plan.averageRating || 0).toFixed(1)})</span>
+          <span>⭐ ${renderStars(plan.averageRating)} (${plan.averageRating.toFixed(1)})</span>
         </div>
       </div>
 
       <div class="plan-section">
         <h2>Daily Tasks</h2>
         <div class="task-list">
-          ${plan.tasks.map((task) => `
+          ${tasks.length ? tasks.map((task) => `
             <div class="task-item">
               <input type="checkbox" data-task-id="${task.id}" />
               <div class="task-content">
-                <h4>Day ${task.day}: ${task.title}</h4>
-                <p class="task-description">${task.description}</p>
+                <h4>Day ${task.day}: ${escapeHtml(task.title)}</h4>
+                <p class="task-description">${escapeHtml(task.description)}</p>
               </div>
             </div>
-          `).join('')}
+          `).join('') : '<div class="empty-state"><p>No tasks have been added to this plan.</p></div>'}
         </div>
       </div>
 
@@ -422,12 +719,13 @@ async function setupPlanDetail() {
         ${isAuthenticated() ? `<button class="btn btn-primary" id="followBtn">Follow Plan</button>` : ''}
         <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
       </div>
-    `;
+    `, 'Error rendering plan details');
 
     if (isAuthenticated()) {
       setupPlanInteractions(planId);
     }
   } catch (error) {
+    setErrorState(container, 'Error loading plan', error.message || 'Please try again later.');
     showMessage('Error loading plan: ' + error.message, 'error');
   }
 }
@@ -454,12 +752,13 @@ async function setupPlanInteractions(planId) {
 
     try {
       const progress = await api.getPlanProgress(planId);
+      const completedTaskIds = safeArray(progress?.completedTaskIds).map((id) => safeInteger(id));
       checkboxes.forEach((checkbox) => {
-        if (progress.completedTaskIds.includes(parseInt(checkbox.dataset.taskId))) {
+        if (completedTaskIds.includes(safeInteger(checkbox.dataset.taskId))) {
           checkbox.checked = true;
         }
       });
-      updateProgressDisplay(checkboxes.length, progress.completedTaskIds.length);
+      updateProgressDisplay(checkboxes.length, completedTaskIds.length);
     } catch (error) {
       console.error('Error loading progress:', error);
     }
@@ -471,7 +770,9 @@ async function setupPlanInteractions(planId) {
     });
 
     saveProgressBtn.addEventListener('click', async () => {
-      const completedTaskIds = Array.from(document.querySelectorAll('[data-task-id]:checked')).map((c) => parseInt(c.dataset.taskId));
+      const completedTaskIds = Array.from(document.querySelectorAll('[data-task-id]:checked'))
+        .map((c) => safeInteger(c.dataset.taskId))
+        .filter(Boolean);
 
       try {
         await api.updateProgress(planId, completedTaskIds);
@@ -492,7 +793,7 @@ async function setupPlanInteractions(planId) {
         return;
       }
 
-      const rating = parseInt(selectedRating.dataset.rating);
+      const rating = safeInteger(selectedRating.dataset.rating);
 
       try {
         await api.ratePlan(planId, rating);
@@ -505,7 +806,9 @@ async function setupPlanInteractions(planId) {
 }
 
 function updateProgressDisplay(total, completed) {
-  const percentage = Math.round((completed / total) * 100);
+  const safeTotal = safeInteger(total);
+  const safeCompleted = safeInteger(completed);
+  const percentage = safeTotal > 0 ? Math.round((safeCompleted / safeTotal) * 100) : 0;
   const progressFill = document.querySelector('.progress-fill');
   const progressText = document.getElementById('progressText');
 
@@ -523,24 +826,42 @@ function selectRating(rating) {
   });
 }
 
+function handleGlobalError(error) {
+  const message = error?.message || String(error || 'Unexpected application error');
+  console.error('Global application error:', error);
+  showMessage(message, 'error');
+}
+
+window.addEventListener('error', (event) => {
+  handleGlobalError(event.error || event.message);
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  handleGlobalError(event.reason);
+});
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-  updateNavigation();
+  try {
+    updateNavigation();
 
-  const page = document.body.getAttribute('data-page');
+    const page = document.body.getAttribute('data-page');
 
-  if (page === 'home') {
-    loadHomePlans();
-    setupHomeSearch();
-  } else if (page === 'login') {
-    setupLoginForm();
-  } else if (page === 'register') {
-    setupRegisterForm();
-  } else if (page === 'dashboard') {
-    setupDashboard();
-  } else if (page === 'create-plan') {
-    setupCreatePlanForm();
-  } else if (page === 'plan-detail') {
-    setupPlanDetail();
+    if (page === 'home') {
+      loadHomePlans();
+      setupHomeSearch();
+    } else if (page === 'login') {
+      setupLoginForm();
+    } else if (page === 'register') {
+      setupRegisterForm();
+    } else if (page === 'dashboard') {
+      setupDashboard();
+    } else if (page === 'create-plan') {
+      setupCreatePlanForm();
+    } else if (page === 'plan-detail') {
+      setupPlanDetail();
+    }
+  } catch (error) {
+    handleGlobalError(error);
   }
 });

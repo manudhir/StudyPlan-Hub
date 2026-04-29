@@ -22,6 +22,8 @@ export const removeFollower = async (userId: number, planId: number) => {
 };
 
 export const getFollowerCount = async (planId: number) => {
-  const result = await pool.query('SELECT COUNT(*) FROM followers WHERE plan_id = $1', [planId]);
+  const result = await pool.query('SELECT COUNT(*)::int AS count FROM followers WHERE plan_id = $1', [
+    planId,
+  ]);
   return Number(result.rows[0]?.count || 0);
 };

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import planRoutes from './routes/plan.routes';
+import aiRoutes from './routes/ai.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimit.middleware';
 
@@ -19,6 +20,7 @@ app.use(rateLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ai', aiRoutes);
 app.use('/api', planRoutes);
 
 const publicPath = path.resolve(__dirname, '..', 'public');

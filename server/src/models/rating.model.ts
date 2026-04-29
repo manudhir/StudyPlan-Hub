@@ -26,7 +26,9 @@ export const upsertRating = async (
 
 export const calculateAverageRating = async (planId: number) => {
   const result = await pool.query(
-    'SELECT AVG(rating)::numeric(10,2) AS average_rating FROM ratings WHERE plan_id = $1',
+    `SELECT COALESCE(ROUND(AVG(rating)::numeric, 2), 0)::float8 AS average_rating
+     FROM ratings
+     WHERE plan_id = $1`,
     [planId],
   );
   return Number(result.rows[0]?.average_rating || 0);

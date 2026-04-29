@@ -2,16 +2,63 @@ import pool from '../config/db';
 
 export interface PlanRecord {
   id: number;
-  creator_id: number;
+  creatorId: number;
   title: string;
   description: string;
   category: string;
-  duration_days: number;
-  average_rating: number;
-  follower_count: number;
-  created_at: string;
-  updated_at: string;
+  durationDays: number;
+  averageRating: number;
+  followerCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+};
+
+export const mapPlanRow = (row: any): PlanRecord => ({
+  id: toNumber(row.id),
+  creatorId: toNumber(row.creatorId ?? row.creator_id),
+  title: row.title ?? '',
+  description: row.description ?? '',
+  category: row.category ?? '',
+  durationDays: toNumber(row.durationDays ?? row.duration_days),
+  averageRating: toNumber(row.averageRating ?? row.average_rating),
+  followerCount: toNumber(row.followerCount ?? row.follower_count),
+  createdAt: row.createdAt ?? row.created_at ?? '',
+  updatedAt: row.updatedAt ?? row.updated_at ?? '',
+});
+
+const planSelect = `
+  SELECT
+    sp.id,
+    sp.creator_id AS "creatorId",
+    sp.title,
+    sp.description,
+    sp.category,
+    sp.duration_days::int AS "durationDays",
+    COALESCE(ROUND(AVG(r.rating)::numeric, 2), 0)::float8 AS "averageRating",
+    COUNT(DISTINCT f.user_id)::int AS "followerCount",
+    sp.created_at AS "createdAt",
+    sp.updated_at AS "updatedAt"
+  FROM study_plans sp
+  LEFT JOIN ratings r ON r.plan_id = sp.id
+  LEFT JOIN followers f ON f.plan_id = sp.id
+`;
+
+const planGroupBy = `
+  GROUP BY
+    sp.id,
+    sp.creator_id,
+    sp.title,
+    sp.description,
+    sp.category,
+    sp.duration_days,
+    sp.created_at,
+    sp.updated_at
+`;
 
 export const createStudyPlan = async (
   creatorId: number,
@@ -23,11 +70,16 @@ export const createStudyPlan = async (
   const result = await pool.query(
     `INSERT INTO study_plans (creator_id, title, description, category, duration_days)
      VALUES ($1, $2, $3, $4, $5)
-     RETURNING *`,
+     RETURNING id`,
     [creatorId, title, description, category, durationDays],
   );
 
-  return result.rows[0];
+  const plan = await findPlanById(result.rows[0].id);
+  if (!plan) {
+    throw new Error('Failed to create study plan');
+  }
+
+  return plan;
 };
 
 export const updateStudyPlan = async (
@@ -60,19 +112,22 @@ export const updateStudyPlan = async (
   }
 
   if (!fields.length) {
-    const existing = await pool.query('SELECT * FROM study_plans WHERE id = $1', [planId]);
-    return existing.rows[0] || null;
+    return findPlanById(planId);
   }
 
   values.push(planId);
   const result = await pool.query(
     `UPDATE study_plans SET ${fields.join(', ')}, updated_at = NOW() WHERE id = $${
       values.length
-    } RETURNING *`,
+    } RETURNING id`,
     values,
   );
 
-  return result.rows[0] || null;
+  if (!result.rows[0]) {
+    return null;
+  }
+
+  return findPlanById(result.rows[0].id);
 };
 
 export const deleteStudyPlan = async (planId: number) => {
@@ -80,8 +135,13 @@ export const deleteStudyPlan = async (planId: number) => {
 };
 
 export const findPlanById = async (planId: number): Promise<PlanRecord | null> => {
-  const result = await pool.query('SELECT * FROM study_plans WHERE id = $1', [planId]);
-  return result.rows[0] || null;
+  const result = await pool.query(
+    `${planSelect}
+     WHERE sp.id = $1
+     ${planGroupBy}`,
+    [planId],
+  );
+  return result.rows[0] ? mapPlanRow(result.rows[0]) : null;
 };
 
 export const findPlanOwner = async (planId: number): Promise<number | null> => {
@@ -101,50 +161,56 @@ export const listStudyPlans = async (filters: {
 
   if (filters.search) {
     values.push(`%${filters.search.toLowerCase()}%`);
-    conditions.push('LOWER(title) LIKE $' + values.length);
+    conditions.push(
+      `(LOWER(sp.title) LIKE $${values.length} OR LOWER(sp.description) LIKE $${
+        values.length
+      } OR LOWER(sp.category) LIKE $${values.length})`,
+    );
   }
 
   if (filters.category) {
     values.push(filters.category);
-    conditions.push('category = $' + values.length);
+    conditions.push('sp.category = $' + values.length);
   }
 
+  const having: string[] = [];
   if (typeof filters.minRating === 'number') {
     values.push(filters.minRating);
-    conditions.push('average_rating >= $' + values.length);
+    having.push('COALESCE(AVG(r.rating), 0) >= $' + values.length);
   }
 
   if (typeof filters.maxDuration === 'number') {
     values.push(filters.maxDuration);
-    conditions.push('duration_days <= $' + values.length);
+    conditions.push('sp.duration_days <= $' + values.length);
   }
 
-  let orderBy = 'created_at DESC';
+  let orderBy = 'sp.created_at DESC';
   if (filters.sortBy === 'popular') {
-    orderBy = 'follower_count DESC, average_rating DESC';
+    orderBy = '"followerCount" DESC, "averageRating" DESC';
   } else if (filters.sortBy === 'rating') {
-    orderBy = 'average_rating DESC, follower_count DESC';
+    orderBy = '"averageRating" DESC, "followerCount" DESC';
   } else if (filters.sortBy === 'duration') {
-    orderBy = 'duration_days ASC';
+    orderBy = '"durationDays" ASC';
   }
 
-  const query = `SELECT id, title, description, category, duration_days AS "durationDays", average_rating AS "averageRating", follower_count AS "followerCount", creator_id AS "creatorId"
-    FROM study_plans
+  const query = `${planSelect}
     ${conditions.length ? 'WHERE ' + conditions.join(' AND ') : ''}
+    ${planGroupBy}
+    ${having.length ? 'HAVING ' + having.join(' AND ') : ''}
     ORDER BY ${orderBy}`;
 
   const result = await pool.query(query, values);
-  return result.rows;
+  return result.rows.map(mapPlanRow);
 };
 
 export const getPopularStudyPlans = async () => {
   const result = await pool.query(
-    `SELECT id, title, description, category, duration_days AS "durationDays", average_rating AS "averageRating", follower_count AS "followerCount", creator_id AS "creatorId"
-     FROM study_plans
-     ORDER BY follower_count DESC, average_rating DESC
+    `${planSelect}
+     ${planGroupBy}
+     ORDER BY "followerCount" DESC, "averageRating" DESC
      LIMIT 12`,
   );
-  return result.rows;
+  return result.rows.map(mapPlanRow);
 };
 
 export const updateFollowerCount = async (planId: number, delta: number) => {
@@ -155,5 +221,8 @@ export const updateFollowerCount = async (planId: number, delta: number) => {
 };
 
 export const updateAverageRating = async (planId: number, averageRating: number) => {
-  await pool.query('UPDATE study_plans SET average_rating = $1 WHERE id = $2', [averageRating, planId]);
+  await pool.query('UPDATE study_plans SET average_rating = $1::numeric WHERE id = $2', [
+    averageRating,
+    planId,
+  ]);
 };

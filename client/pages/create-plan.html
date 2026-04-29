@@ -30,6 +30,11 @@
         <div class="create-plan-header">
           <h1>Create a New Study Plan</h1>
           <p>Share your knowledge with the community and help others learn</p>
+          <div class="create-plan-header-actions">
+            <button type="button" class="btn btn-secondary" id="aiPlanGeneratorBtn">
+              AI Plan Generator
+            </button>
+          </div>
         </div>
 
         <div class="message"></div>
@@ -143,6 +148,10 @@
       .create-plan-header p {
         color: #6b7280;
         font-size: 1.1rem;
+      }
+
+      .create-plan-header-actions {
+        margin-top: 1rem;
       }
 
       .create-plan-card {
@@ -265,6 +274,8 @@
       }
     </style>
 
+    <script src="../js/toast.js"></script>
+    <script src="../js/modal.js"></script>
     <script src="../js/api.js"></script>
     <script src="../js/app.js"></script>
   </body>

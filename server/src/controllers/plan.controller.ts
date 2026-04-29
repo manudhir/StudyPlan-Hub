@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
 import * as planService from '../services/plan.service';
 
+const parseOptionalNumber = (value: unknown): number | undefined => {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
+
 export const createPlan = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const plan = await planService.createPlan(req.user!.id, req.body);
@@ -15,8 +24,8 @@ export const getPlans = async (req: Request, res: Response, next: NextFunction) 
     const plans = await planService.getPlans({
       search: typeof req.query.search === 'string' ? req.query.search : undefined,
       category: typeof req.query.category === 'string' ? req.query.category : undefined,
-      minRating: req.query.minRating ? Number(req.query.minRating) : undefined,
-      maxDuration: req.query.duration ? Number(req.query.duration) : undefined,
+      minRating: parseOptionalNumber(req.query.minRating),
+      maxDuration: parseOptionalNumber(req.query.duration ?? req.query.maxDuration),
       sortBy: typeof req.query.sortBy === 'string' ? req.query.sortBy : undefined,
     });
     res.json({ success: true, data: plans });
