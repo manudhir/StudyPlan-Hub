@@ -51,6 +51,9 @@ function normalizePlan(plan) {
     averageRating: safeNumber(source.averageRating ?? source.average_rating, 0),
     followerCount: safeInteger(source.followerCount ?? source.follower_count, 0),
     tasks: safeArray(source.tasks).map(normalizeTask),
+    createdAt: safeText(source.createdAt || source.created_at, ''),
+    updatedAt: safeText(source.updatedAt || source.updated_at, ''),
+    creatorId: safeInteger(source.creatorId ?? source.creator_id, 0),
   };
 }
 
@@ -177,7 +180,8 @@ async function loadHomePlans() {
 
 function createPlanCard(plan) {
   const safePlan = normalizePlan(plan);
-  const ratingLabel = safePlan.averageRating.toFixed(1);
+  const rating = safeNumber(safePlan.averageRating, 0);
+  const ratingLabel = Number.isFinite(rating) ? rating.toFixed(1) : '0.0';
   const actionButtons = safePlan.id
     ? `
         <button class="btn btn-primary" onclick="viewPlan(${safePlan.id})">View Plan</button>
@@ -204,7 +208,7 @@ function createPlanCard(plan) {
           </div>
           <div class="stat">
             <div class="rating-display">
-              <span class="star">${renderStars(safePlan.averageRating)}</span>
+              <span class="star">${renderStars(rating)}</span>
             </div>
             <div class="stat-label">${ratingLabel}</div>
           </div>
@@ -666,6 +670,8 @@ async function setupPlanDetail() {
     setLoading(container, 'Loading plan details...');
     const plan = normalizePlan(await api.getPlanById(planId));
     const tasks = safeArray(plan.tasks);
+    const rating = safeNumber(plan.averageRating, 0);
+    const ratingDisplay = Number.isFinite(rating) ? rating.toFixed(1) : '0.0';
 
     renderSafely(container, () => `
       <div class="plan-detail-header">
@@ -675,7 +681,7 @@ async function setupPlanDetail() {
         <div class="plan-meta">
           <span>📅 ${plan.durationDays} days</span>
           <span>👥 ${plan.followerCount} followers</span>
-          <span>⭐ ${renderStars(plan.averageRating)} (${plan.averageRating.toFixed(1)})</span>
+          <span>⭐ ${renderStars(rating)} (${ratingDisplay})</span>
         </div>
       </div>
 

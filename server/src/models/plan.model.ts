@@ -14,8 +14,11 @@ export interface PlanRecord {
 }
 
 const toNumber = (value: unknown, fallback = 0): number => {
+  if (value === null || value === undefined) return fallback;
   const numericValue = Number(value);
-  return Number.isFinite(numericValue) ? numericValue : fallback;
+  if (!Number.isFinite(numericValue)) return fallback;
+  // Round to 2 decimal places for ratings
+  return Math.round(numericValue * 100) / 100;
 };
 
 export const mapPlanRow = (row: any): PlanRecord => ({
@@ -39,7 +42,7 @@ const planSelect = `
     sp.description,
     sp.category,
     sp.duration_days::int AS "durationDays",
-    COALESCE(ROUND(AVG(r.rating)::numeric, 2), 0)::float8 AS "averageRating",
+    COALESCE(ROUND(AVG(r.rating)::numeric, 2), 0)::numeric AS "averageRating",
     COUNT(DISTINCT f.user_id)::int AS "followerCount",
     sp.created_at AS "createdAt",
     sp.updated_at AS "updatedAt"

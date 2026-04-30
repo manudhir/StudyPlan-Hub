@@ -1,6 +1,6 @@
 /**
  * Modal Dialog System
- * Usage: Modal.confirm('Delete this?', () => { /* on confirm */ }, () => { /* on cancel */ })
+ * Usage: Modal.confirm('Delete this?', onConfirm, onCancel)
  */
 class Modal {
   static confirm(
